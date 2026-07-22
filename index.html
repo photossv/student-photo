@@ -3,44 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Concession Card Photo Upload Wizard</title>
-    <!-- Include Stable Cropper.css via CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; background-color: #f4f4f9; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .img-container { width: 100%; height: 400px; margin-top: 20px; background-color: #eaebed; overflow: hidden; position: relative; }
-        img { max-width: 100%; display: block; }
-        
-        /* Styled Controls */
-        .controls { margin-top: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .btn-group { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .slider-group { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
-        .slider-group label { font-weight: bold; font-size: 14px; }
-        .slider-group input { width: 70%; }
-        
-        button, .link-btn { padding: 10px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; }
-        button:hover, .link-btn:hover { background: #0056b3; }
-        .btn-secondary { background: #6c757d; }
-        .btn-secondary:hover { background: #5a6268; }
-        .btn-success { background: #28a745; width: 100%; padding: 12px; font-size: 16px; margin-top: 10px; }
-        .btn-success:hover { background: #218838; }
-        .btn-download { background: #ffc107; color: #212529; margin-top: 10px; padding: 12px 20px; font-size: 16px; }
-        .btn-download:hover { background: #e0a800; }
-        
-        .portal-section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #cccccc; }
-        .btn-portal { background: #17a2b8; width: 100%; padding: 12px; font-size: 16px; }
-        .btn-portal:hover { background: #138496; }
+    <title>Concession Card Photo Setup</title>
+    
+    <!-- Cropper.js CSS & JS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    
+    <!-- Face-API.js for Auto-Zoom -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-        #result { margin-top: 25px; }
-        .error-msg { color: #dc3545; font-weight: bold; margin-top: 10px; }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        .alert-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        .img-container {
+            width: 100%;
+            height: 350px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .img-container img {
+            max-width: 100%;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .file-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        input[type="file"], input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
         
-        /* Updated Requirement Box styling */
-        .requirement-box { background: #fff3cd; color: #856404; padding: 15px; border-radius: 6px; font-size: 14px; text-align: left; margin-bottom: 15px; border-left: 4px solid #ffc107; line-height: 1.4; }
+        /* Button Group Layouts */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.btn-secondary {
+            background-color: #6c757d;
+        }
+        button.btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        button.btn-preview {
+            background-color: #17a2b8;
+        }
+        button.btn-preview:hover {
+            background-color: #138496;
+        }
         
-        /* Hide the resizing handles of the cropper box to prevent confusion */
-        .cropper-line, .cropper-point { display: none !important; }
-        .cropper-face { cursor: move !important; background: transparent !important; }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .slider-group input {
+            flex: 1;
+        }
+        
+        /* Cropped Photo Preview Section */
+        .preview-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px dashed #007bff;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .preview-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            color: #007bff;
+        }
+        .preview-box {
+            width: 120px;
+            height: 160px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .portal-link {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        .portal-link a {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .portal-link a:hover {
+            background-color: #218838;
+        }
+        .status-text {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -48,170 +184,291 @@
 <div class="container">
     <h2>Concession Card Photo Setup</h2>
     
-    <!-- Custom Photo Guideline Banner -->
-    <div class="requirement-box">
+    <div class="alert-box">
         <strong>⚠️ Photo Requirement:</strong> Please upload a passport-style photo taken against a plain, light-colored or white background. Ensure your hair is neat and your face is fully visible.
     </div>
-    
-    <input type="file" id="upload" accept="image/jpeg, image/jpg, image/png, image/heic, .heic">
-    
+
+    <!-- Image Workspace -->
     <div class="img-container">
-        <img id="image" src="" alt="Your photo preview will appear here">
+        <img id="imageToCrop" alt="Your photo preview will appear here" src="" style="display:none;">
     </div>
 
     <div class="controls">
-        <!-- Touch Fallback Adjustment Buttons -->
-        <div class="btn-group">
-            <button class="btn-secondary" id="moveLeft">⬅️ Left</button>
-            <button class="btn-secondary" id="moveRight">➡️ Right</button>
-            <button class="btn-secondary" id="moveUp">⬆️ Up</button>
-            <button class="btn-secondary" id="moveDown">⬇️ Down</button>
-        </div>
-        <div class="btn-group">
-            <button class="btn-secondary" id="zoomIn">➕ Zoom In</button>
-            <button class="btn-secondary" id="zoomOut">➖ Zoom Out</button>
+        <!-- 1. Select Photo -->
+        <div class="file-input-group">
+            <label for="imageInput"><strong>1. Select Photo:</strong></label>
+            <input type="file" id="imageInput" accept="image/*">
         </div>
 
-        <!-- Brightness Control Slider -->
-        <div class="slider-group">
-            <label for="brightness">Brightness:</label>
-            <input type="range" id="brightness" min="50" max="150" value="100">
+        <!-- 2. Auto Zoom Action -->
+        <div class="btn-group">
+            <button type="button" id="autoZoomBtn" class="btn-secondary" style="width: 100%;">✨ Auto-Zoom Face</button>
         </div>
-        
-        <button class="btn-success" id="saveBtn">1. Process Photo</button>
+        <span id="loadingStatus" class="status-text" style="display:none;">Detecting face, please wait...</span>
+
+        <!-- 3. Navigation Controls -->
+        <div class="btn-group">
+            <button type="button" id="moveLeftBtn" class="btn-secondary">⬅️ Left</button>
+            <button type="button" id="moveRightBtn" class="btn-secondary">➡️ Right</button>
+            <button type="button" id="moveUpBtn" class="btn-secondary">⬆️ Up</button>
+            <button type="button" id="moveDownBtn" class="btn-secondary">⬇️ Down</button>
+        </div>
+
+        <!-- 4. Zoom Controls -->
+        <div class="btn-group">
+            <button type="button" id="zoomInBtn" class="btn-secondary" style="flex:1;">➕ Zoom In</button>
+            <button type="button" id="zoomOutBtn" class="btn-secondary" style="flex:1;">➖ Zoom Out</button>
+        </div>
+
+        <!-- Brightness Adjustment Slider -->
+        <div class="slider-group">
+            <label for="brightnessSlider">Brightness:</label>
+            <input type="range" id="brightnessSlider" min="50" max="150" value="100">
+        </div>
+
+        <!-- Preview Button -->
+        <button type="button" id="previewBtn" class="btn-preview" style="width: 100%; padding: 10px;">👁️ Preview Cropped Photo</button>
+
+        <!-- Preview Display Area -->
+        <div id="previewSection" class="preview-section">
+            <h3>📷 Photo Preview (240x320)</h3>
+            <div class="preview-box">
+                <img id="croppedPreview" alt="Cropped Preview">
+            </div>
+            <p style="font-size: 12px; color: #555; margin-top: 8px;">Happy with the result? Enter your NRIC below to save.</p>
+        </div>
+
+        <!-- NRIC Entry -->
+        <div class="file-input-group" style="margin-top: 10px;">
+            <label for="nricInput"><strong>2. Enter NRIC Number:</strong></label>
+            <input 
+                type="text" 
+                id="nricInput" 
+                placeholder="e.g., S1234567A" 
+                maxlength="9"
+                style="text-transform: uppercase;"
+            >
+        </div>
+
+        <!-- Save Button -->
+        <button type="button" id="downloadBtn" style="width: 100%; padding: 12px; background-color: #28a745;">💾 Save & Download Photo</button>
     </div>
 
-    <div id="result"></div>
-
-    <!-- Student Portal Link Section -->
-    <div class="portal-section">
-        <p style="color: #666; font-size: 14px;">Done saving your photo? Proceed to upload it here:</p>
-        <a href="https://student.ite.edu.sg/psp/CS92PRD/?cmd=login&languageCd=ENG&">2. Go to Student Portal ➡️</a>
+    <!-- Direct Portal Link -->
+    <div class="portal-link">
+        <p>Done saving your photo? Proceed to upload it here:</p>
+        <a href="https://student.ite.edu.sg/psp/CS92PRD/?cmd=login&languageCd=ENG&" target="_blank">Go to Student Portal ➡️</a>
     </div>
 </div>
 
-<!-- Essential Lightweight Web Dependencies (Fast loading) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
-
 <script>
-    let cropper;
-    const image = document.getElementById('image');
-    const upload = document.getElementById('upload');
-    const brightnessSlider = document.getElementById('brightness');
-    const saveBtn = document.getElementById('saveBtn');
-    const resultDiv = document.getElementById('result');
+    let cropper = null;
+    let isFaceApiLoaded = false;
 
-    // Fast File Upload Processing
-    upload.addEventListener('change', async (e) => {
+    // Load Face Detection Models
+    async function loadFaceApiModels() {
+        try {
+            await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+            isFaceApiLoaded = true;
+        } catch (error) {
+            console.error('Error loading face-api models:', error);
+        }
+    }
+    window.addEventListener('DOMContentLoaded', loadFaceApiModels);
+
+    // Image Upload & Cropper Initialization (Fixed 240x320 Box)
+    const imageInput = document.getElementById('imageInput');
+    const imageToCrop = document.getElementById('imageToCrop');
+
+    imageInput.addEventListener('change', (e) => {
         const files = e.target.files;
-        if (!files || files.length === 0) return;
-        
-        let file = files[0];
-        const fileExtension = file.name.split('.').pop().toLowerCase();
+        if (files && files.length > 0) {
+            const file = files[0];
+            const reader = new FileReader();
 
-        // Safety limit to prevent extreme file size lockups
-        if (file.size > 20 * 1024 * 1024) {
-            alert("This file is too large. Please select a photo smaller than 20MB.");
-            upload.value = "";
+            reader.onload = (event) => {
+                imageToCrop.src = event.target.result;
+                imageToCrop.style.display = 'block';
+
+                // Hide preview section on new image upload
+                document.getElementById('previewSection').style.display = 'none';
+
+                if (cropper) {
+                    cropper.destroy();
+                }
+
+                // Fixed 240x320 Crop Box Setup
+                cropper = new Cropper(imageToCrop, {
+                    aspectRatio: 240 / 320,
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                    cropBoxResizable: false, // Locks crop box size
+                    dragMode: 'move',
+                    toggleDragModeOnDblclick: false,
+                    responsive: true,
+                });
+            };
+
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Auto-Zoom to Face
+    const autoZoomBtn = document.getElementById('autoZoomBtn');
+    const loadingStatus = document.getElementById('loadingStatus');
+
+    autoZoomBtn.addEventListener('click', async () => {
+        if (!cropper) {
+            alert('Please select a photo first.');
             return;
         }
 
-        resultDiv.innerHTML = ""; 
+        if (!isFaceApiLoaded) {
+            alert('Face detection is initializing. Please wait a moment and try again.');
+            return;
+        }
+
+        loadingStatus.style.display = 'block';
 
         try {
-            // Handle native Apple device HEIC formats instantly
-            if (fileExtension === 'heic' || fileExtension === 'heif' || file.type === 'image/heic') {
-                const conversionResult = await heic2any({
-                    blob: file,
-                    toType: "image/jpeg",
-                    quality: 0.9
-                });
-                file = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
+            const detection = await faceapi.detectSingleFace(
+                imageToCrop,
+                new faceapi.TinyFaceDetectorOptions()
+            );
+
+            loadingStatus.style.display = 'none';
+
+            if (!detection) {
+                alert('No face detected. You can manually adjust the photo position.');
+                return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                image.src = event.target.result;
-                
-                if (cropper) cropper.destroy();
-                
-                cropper = new Cropper(image, {
-                    aspectRatio: 240 / 320, 
-                    viewMode: 1, 
-                    dragMode: 'move',
-                    cropBoxMovable: false,
-                    cropBoxResizable: false,
-                    autoCropArea: 0.7
-                });
+            const { x, y, width, height } = detection.box;
+
+            const paddingX = width * 0.45;
+            let cropWidth = width + (paddingX * 2);
+            let cropHeight = cropWidth * (320 / 240);
+
+            const cropData = {
+                x: Math.max(0, x - paddingX),
+                y: Math.max(0, y - (height * 0.5)),
+                width: cropWidth,
+                height: cropHeight,
             };
-            reader.readAsDataURL(file);
 
-        } catch (error) {
-            console.error(error);
-            alert("Could not load image file. Please try a standard JPG or PNG photo.");
-            upload.value = "";
+            cropper.setData(cropData);
+
+        } catch (err) {
+            loadingStatus.style.display = 'none';
+            console.error(err);
+            alert('Error running face detection.');
         }
     });
 
-    // Adjustment Button Layout Logic
-    document.getElementById('moveLeft').addEventListener('click', () => { if(cropper) cropper.move(-10, 0); });
-    document.getElementById('moveRight').addEventListener('click', () => { if(cropper) cropper.move(10, 0); });
-    document.getElementById('moveUp').addEventListener('click', () => { if(cropper) cropper.move(0, -10); });
-    document.getElementById('moveDown').addEventListener('click', () => { if(cropper) cropper.move(0, 10); });
-    document.getElementById('zoomIn').addEventListener('click', () => { if(cropper) cropper.zoom(0.1); });
-    document.getElementById('zoomOut').addEventListener('click', () => { if(cropper) cropper.zoom(-0.1); });
+    // Navigation (Move) Buttons
+    document.getElementById('moveLeftBtn').addEventListener('click', () => {
+        if (cropper) cropper.move(-10, 0);
+    });
+    document.getElementById('moveRightBtn').addEventListener('click', () => {
+        if (cropper) cropper.move(10, 0);
+    });
+    document.getElementById('moveUpBtn').addEventListener('click', () => {
+        if (cropper) cropper.move(0, -10);
+    });
+    document.getElementById('moveDownBtn').addEventListener('click', () => {
+        if (cropper) cropper.move(0, 10);
+    });
 
-    brightnessSlider.addEventListener('input', () => {
-        if (cropper) {
-            const container = document.querySelector('.cropper-container');
-            container.style.filter = `brightness(${brightnessSlider.value}%)`;
+    // Zoom Buttons
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+        if (cropper) cropper.zoom(0.1);
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+        if (cropper) cropper.zoom(-0.1);
+    });
+
+    // Brightness Slider
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    brightnessSlider.addEventListener('input', (e) => {
+        const val = e.target.value;
+        const cropperImg = document.querySelector('.cropper-container img');
+        if (cropperImg) {
+            cropperImg.style.filter = `brightness(${val}%)`;
         }
     });
 
-    // Core Canvas Processing Engine (240x320 JPEG Output < 150KB)
-    saveBtn.addEventListener('click', () => {
-        if (!cropper) return;
+    // Preview Button Logic (Triggers preview before NRIC/Download)
+    const previewBtn = document.getElementById('previewBtn');
+    const previewSection = document.getElementById('previewSection');
+    const croppedPreview = document.getElementById('croppedPreview');
 
-        const croppedCanvas = cropper.getCroppedCanvas({
+    previewBtn.addEventListener('click', () => {
+        if (!cropper) {
+            alert('Please upload a photo first.');
+            return;
+        }
+
+        const canvas = cropper.getCroppedCanvas({
             width: 240,
-            height: 320
+            height: 320,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
         });
 
-        const finalCanvas = document.createElement('canvas');
-        finalCanvas.width = 240;
-        finalCanvas.height = 320;
-        const ctx = finalCanvas.getContext('2d');
-
-        // Draw solid background layer
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, 240, 320);
-
-        // Map adjusted image details onto base canvas template
-        ctx.filter = `brightness(${brightnessSlider.value}%)`;
-        ctx.drawImage(croppedCanvas, 0, 0, 240, 320);
-
-        let quality = 0.95; 
-        let finalDataUrl = finalCanvas.toDataURL('image/jpeg', quality);
-        let fileSizeKB = (finalDataUrl.length * (3/4)) / 1024;
-
-        // Compression downscaling system loop
-        while (fileSizeKB > 150 && quality > 0.1) {
-            quality -= 0.05;
-            finalDataUrl = finalCanvas.toDataURL('image/jpeg', quality);
-            fileSizeKB = (finalDataUrl.length * (3/4)) / 1024;
+        if (!canvas) {
+            alert('Could not generate preview.');
+            return;
         }
 
-        if (fileSizeKB > 150) {
-            resultDiv.innerHTML = `<p class="error-msg">Error: Unable to drop file weight under 150KB threshold limit.</p>`;
-        } else {
-            resultDiv.innerHTML = `
-                <h3>Final Concession Photo Ready</h3>
-                <p style="color: #28a745; font-weight: bold;">Saved Format: JPEG (.jpg) | Size: ${fileSizeKB.toFixed(1)} KB</p>
-                <img src="${finalDataUrl}" style="border:1px solid #ddd; margin: 0 auto 15px auto;">
-                <a href="${finalDataUrl}" download="concession_photo.jpg" class="link-btn btn-download">📥 Download & Save Photo</a>
-            `;
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
+        croppedPreview.src = previewUrl;
+        previewSection.style.display = 'flex';
+    });
+
+    // Save/Download Photo Logic
+    const downloadBtn = document.getElementById('downloadBtn');
+    const nricInput = document.getElementById('nricInput');
+
+    downloadBtn.addEventListener('click', () => {
+        if (!cropper) {
+            alert('Please upload and crop a photo first.');
+            return;
         }
+
+        const nricValue = nricInput.value.trim().toUpperCase();
+        const nricRegex = /^[A-Z0-9]{9}$/;
+
+        if (!nricRegex.test(nricValue)) {
+            alert('Please enter a valid 9-character NRIC number (e.g., S1234567A) before saving.');
+            nricInput.focus();
+            return;
+        }
+
+        // Export strictly at 240 x 320 pixels
+        const canvas = cropper.getCroppedCanvas({
+            width: 240,
+            height: 320,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        if (!canvas) {
+            alert('Could not crop photo.');
+            return;
+        }
+
+        // Trigger Download
+        canvas.toBlob((blob) => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${nricValue}.jpg`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => URL.revokeObjectURL(link.href), 100);
+        }, 'image/jpeg', 0.9);
     });
 </script>
 
