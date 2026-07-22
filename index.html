@@ -60,7 +60,7 @@
             max-width: 100%;
         }
         
-        /* Ensures control elements stay clickable above cropper overlay layers */
+        /* Controls layout ensuring interactive elements stay above Cropper overlays */
         .controls {
             display: flex;
             flex-direction: column;
@@ -115,7 +115,7 @@
             background-color: #138496;
         }
         
-        /* Explicit layer styling for range slider */
+        /* Layer styling for Brightness slider */
         .slider-group {
             display: flex;
             align-items: center;
@@ -132,7 +132,7 @@
             accent-color: #007bff;
         }
         
-        /* Smooth transition for brightness adjustments in Cropper */
+        /* Smooth transition for live brightness preview */
         .cropper-container img {
             transition: filter 0.1s ease;
         }
@@ -308,7 +308,7 @@
                 imageToCrop.src = event.target.result;
                 imageToCrop.style.display = 'block';
 
-                // Reset brightness slider and preview section on new upload
+                // Reset brightness slider and hide preview section on new upload
                 brightnessSlider.value = 100;
                 document.getElementById('previewSection').style.display = 'none';
 
@@ -332,7 +332,7 @@
         }
     });
 
-    // Auto-Zoom to Face
+    // Updated Auto-Zoom to Face (Zooms/centers image into fixed crop box)
     const autoZoomBtn = document.getElementById('autoZoomBtn');
     const loadingStatus = document.getElementById('loadingStatus');
 
@@ -364,18 +364,24 @@
 
             const { x, y, width, height } = detection.box;
 
-            const paddingX = width * 0.45;
-            let cropWidth = width + (paddingX * 2);
-            let cropHeight = cropWidth * (320 / 240);
+            // Calculate center point of detected face
+            const faceCenterX = x + width / 2;
+            const faceCenterY = y + height / 2;
 
-            const cropData = {
-                x: Math.max(0, x - paddingX),
-                y: Math.max(0, y - (height * 0.5)),
-                width: cropWidth,
-                height: cropHeight,
-            };
+            // Determine zoom level so face fills ~45% height of crop box
+            const imageData = cropper.getImageData();
+            const targetZoomRatio = (imageData.naturalHeight * 0.45) / height;
 
-            cropper.setData(cropData);
+            // Apply zoom and align image center to crop box
+            cropper.zoomTo(targetZoomRatio);
+            
+            const canvasData = cropper.getCanvasData();
+            const cropBoxData = cropper.getCropBoxData();
+            
+            const offsetX = (cropBoxData.left + cropBoxData.width / 2) - (canvasData.left + (faceCenterX * (canvasData.width / imageData.naturalWidth)));
+            const offsetY = (cropBoxData.top + cropBoxData.height / 2) - (canvasData.top + (faceCenterY * (canvasData.height / imageData.naturalHeight)));
+
+            cropper.move(offsetX, offsetY);
 
         } catch (err) {
             loadingStatus.style.display = 'none';
