@@ -120,6 +120,11 @@
             flex: 1;
         }
         
+        /* Smooth transition for brightness adjustments in Cropper */
+        .cropper-container img {
+            transition: filter 0.1s ease;
+        }
+
         /* Cropped Photo Preview Section */
         .preview-section {
             display: none;
@@ -279,6 +284,7 @@
     // Image Upload & Cropper Initialization (Fixed 240x320 Box)
     const imageInput = document.getElementById('imageInput');
     const imageToCrop = document.getElementById('imageToCrop');
+    const brightnessSlider = document.getElementById('brightnessSlider');
 
     imageInput.addEventListener('change', (e) => {
         const files = e.target.files;
@@ -290,7 +296,8 @@
                 imageToCrop.src = event.target.result;
                 imageToCrop.style.display = 'block';
 
-                // Hide preview section on new image upload
+                // Reset brightness slider and preview section on new upload
+                brightnessSlider.value = 100;
                 document.getElementById('previewSection').style.display = 'none';
 
                 if (cropper) {
@@ -387,17 +394,36 @@
         if (cropper) cropper.zoom(-0.1);
     });
 
-    // Brightness Slider
-    const brightnessSlider = document.getElementById('brightnessSlider');
+    // Live Brightness Slider Control
     brightnessSlider.addEventListener('input', (e) => {
         const val = e.target.value;
-        const cropperImg = document.querySelector('.cropper-container img');
-        if (cropperImg) {
-            cropperImg.style.filter = `brightness(${val}%)`;
-        }
+        const cropperImages = document.querySelectorAll('.cropper-container img');
+        cropperImages.forEach(img => {
+            img.style.filter = `brightness(${val}%)`;
+        });
     });
 
-    // Preview Button Logic (Triggers preview before NRIC/Download)
+    // Helper: Bake Brightness into Canvas Output
+    function applyBrightnessToCanvas(canvas, brightnessValue) {
+        if (brightnessValue == 100) return canvas;
+        
+        const ctx = canvas.getContext('2d');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.filter = `brightness(${brightnessValue}%)`;
+        ctx.drawImage(tempCanvas, 0, 0);
+        ctx.filter = 'none';
+        
+        return canvas;
+    }
+
+    // Preview Button Logic
     const previewBtn = document.getElementById('previewBtn');
     const previewSection = document.getElementById('previewSection');
     const croppedPreview = document.getElementById('croppedPreview');
@@ -408,7 +434,7 @@
             return;
         }
 
-        const canvas = cropper.getCroppedCanvas({
+        let canvas = cropper.getCroppedCanvas({
             width: 240,
             height: 320,
             imageSmoothingEnabled: true,
@@ -419,6 +445,9 @@
             alert('Could not generate preview.');
             return;
         }
+
+        // Apply brightness value to preview image canvas
+        canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
 
         const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
         croppedPreview.src = previewUrl;
@@ -444,8 +473,7 @@
             return;
         }
 
-        // Export strictly at 240 x 320 pixels
-        const canvas = cropper.getCroppedCanvas({
+        let canvas = cropper.getCroppedCanvas({
             width: 240,
             height: 320,
             imageSmoothingEnabled: true,
@@ -456,6 +484,9 @@
             alert('Could not crop photo.');
             return;
         }
+
+        // Apply brightness value to saved image canvas
+        canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
 
         // Trigger Download
         canvas.toBlob((blob) => {
