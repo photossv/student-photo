@@ -54,14 +54,19 @@
             margin-bottom: 20px;
             border-radius: 4px;
             overflow: hidden;
+            position: relative;
         }
         .img-container img {
             max-width: 100%;
         }
+        
+        /* Ensures control elements stay clickable above cropper overlay layers */
         .controls {
             display: flex;
             flex-direction: column;
             gap: 15px;
+            position: relative;
+            z-index: 10;
         }
         .file-input-group {
             display: flex;
@@ -110,14 +115,21 @@
             background-color: #138496;
         }
         
+        /* Explicit layer styling for range slider */
         .slider-group {
             display: flex;
             align-items: center;
             gap: 10px;
             font-size: 14px;
+            position: relative;
+            z-index: 20;
         }
-        .slider-group input {
+        .slider-group input[type="range"] {
             flex: 1;
+            cursor: pointer;
+            position: relative;
+            z-index: 20;
+            accent-color: #007bff;
         }
         
         /* Smooth transition for brightness adjustments in Cropper */
