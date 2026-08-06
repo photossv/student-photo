@@ -6,8 +6,8 @@
     <title>Concession Card Photo Setup</title>
     
     <!-- Cropper.js CSS & JS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <!-- Face-API.js for Auto-Zoom -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
@@ -58,9 +58,9 @@
         }
         .img-container img {
             max-width: 100%;
+            display: block;
         }
         
-        /* Controls layout ensuring interactive elements stay above Cropper overlays */
         .controls {
             display: flex;
             flex-direction: column;
@@ -82,7 +82,6 @@
             box-sizing: border-box;
         }
         
-        /* Button Group Layouts */
         .btn-group {
             display: flex;
             gap: 8px;
@@ -115,7 +114,6 @@
             background-color: #138496;
         }
         
-        /* Layer styling for Brightness slider */
         .slider-group {
             display: flex;
             align-items: center;
@@ -132,12 +130,11 @@
             accent-color: #007bff;
         }
         
-        /* Smooth transition for live brightness preview */
-        .cropper-container img {
+        /* Smooth filter application specifically to active cropper image layer */
+        .cropper-canvas img {
             transition: filter 0.1s ease;
         }
 
-        /* Cropped Photo Preview Section */
         .preview-section {
             display: none;
             flex-direction: column;
@@ -282,10 +279,12 @@
     let cropper = null;
     let isFaceApiLoaded = false;
 
-    // Load Face Detection Models
+    // Reliable public CDN hosted models for face-api.js
+    const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+
     async function loadFaceApiModels() {
         try {
-            await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
             isFaceApiLoaded = true;
         } catch (error) {
             console.error('Error loading face-api models:', error);
@@ -293,7 +292,6 @@
     }
     window.addEventListener('DOMContentLoaded', loadFaceApiModels);
 
-    // Image Upload & Cropper Initialization (Fixed 240x320 Box)
     const imageInput = document.getElementById('imageInput');
     const imageToCrop = document.getElementById('imageToCrop');
     const brightnessSlider = document.getElementById('brightnessSlider');
@@ -308,7 +306,6 @@
                 imageToCrop.src = event.target.result;
                 imageToCrop.style.display = 'block';
 
-                // Reset brightness slider and hide preview section on new upload
                 brightnessSlider.value = 100;
                 document.getElementById('previewSection').style.display = 'none';
 
@@ -316,15 +313,15 @@
                     cropper.destroy();
                 }
 
-                // Fixed 240x320 Crop Box Setup
                 cropper = new Cropper(imageToCrop, {
                     aspectRatio: 240 / 320,
                     viewMode: 1,
                     autoCropArea: 0.8,
-                    cropBoxResizable: false, // Locks crop box size
+                    cropBoxResizable: false,
                     dragMode: 'move',
                     toggleDragModeOnDblclick: false,
                     responsive: true,
+                    checkCrossOrigin: false,
                 });
             };
 
@@ -332,7 +329,6 @@
         }
     });
 
-    // Updated Auto-Zoom to Face (Zooms/centers image into fixed crop box)
     const autoZoomBtn = document.getElementById('autoZoomBtn');
     const loadingStatus = document.getElementById('loadingStatus');
 
@@ -343,7 +339,7 @@
         }
 
         if (!isFaceApiLoaded) {
-            alert('Face detection is initializing. Please wait a moment and try again.');
+            alert('Face detection model is still initializing. Please wait a moment.');
             return;
         }
 
@@ -363,16 +359,12 @@
             }
 
             const { x, y, width, height } = detection.box;
-
-            // Calculate center point of detected face
             const faceCenterX = x + width / 2;
             const faceCenterY = y + height / 2;
 
-            // Determine zoom level so face fills ~45% height of crop box
             const imageData = cropper.getImageData();
             const targetZoomRatio = (imageData.naturalHeight * 0.45) / height;
 
-            // Apply zoom and align image center to crop box
             cropper.zoomTo(targetZoomRatio);
             
             const canvasData = cropper.getCanvasData();
@@ -385,63 +377,46 @@
 
         } catch (err) {
             loadingStatus.style.display = 'none';
-            console.error(err);
+            console.error('Face detection error:', err);
             alert('Error running face detection.');
         }
     });
 
-    // Navigation (Move) Buttons
-    document.getElementById('moveLeftBtn').addEventListener('click', () => {
-        if (cropper) cropper.move(-10, 0);
-    });
-    document.getElementById('moveRightBtn').addEventListener('click', () => {
-        if (cropper) cropper.move(10, 0);
-    });
-    document.getElementById('moveUpBtn').addEventListener('click', () => {
-        if (cropper) cropper.move(0, -10);
-    });
-    document.getElementById('moveDownBtn').addEventListener('click', () => {
-        if (cropper) cropper.move(0, 10);
-    });
+    // Navigation Controls
+    document.getElementById('moveLeftBtn').addEventListener('click', () => { if (cropper) cropper.move(-10, 0); });
+    document.getElementById('moveRightBtn').addEventListener('click', () => { if (cropper) cropper.move(10, 0); });
+    document.getElementById('moveUpBtn').addEventListener('click', () => { if (cropper) cropper.move(0, -10); });
+    document.getElementById('moveDownBtn').addEventListener('click', () => { if (cropper) cropper.move(0, 10); });
 
-    // Zoom Buttons
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-        if (cropper) cropper.zoom(0.1);
-    });
-    document.getElementById('zoomOutBtn').addEventListener('click', () => {
-        if (cropper) cropper.zoom(-0.1);
-    });
+    // Zoom Controls
+    document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Slider Control
+    // Live Brightness
     brightnessSlider.addEventListener('input', (e) => {
         const val = e.target.value;
-        const cropperImages = document.querySelectorAll('.cropper-container img');
+        const cropperImages = document.querySelectorAll('.cropper-canvas img');
         cropperImages.forEach(img => {
             img.style.filter = `brightness(${val}%)`;
         });
     });
 
-    // Helper: Bake Brightness into Canvas Output
+    // Bake Brightness to Output Canvas
     function applyBrightnessToCanvas(canvas, brightnessValue) {
         if (brightnessValue == 100) return canvas;
         
-        const ctx = canvas.getContext('2d');
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
+        const outputCanvas = document.createElement('canvas');
+        outputCanvas.width = canvas.width;
+        outputCanvas.height = canvas.height;
+        const ctx = outputCanvas.getContext('2d');
         
-        tempCtx.drawImage(canvas, 0, 0);
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.filter = `brightness(${brightnessValue}%)`;
-        ctx.drawImage(tempCanvas, 0, 0);
-        ctx.filter = 'none';
+        ctx.drawImage(canvas, 0, 0);
         
-        return canvas;
+        return outputCanvas;
     }
 
-    // Preview Button Logic
+    // Preview Action
     const previewBtn = document.getElementById('previewBtn');
     const previewSection = document.getElementById('previewSection');
     const croppedPreview = document.getElementById('croppedPreview');
@@ -464,15 +439,12 @@
             return;
         }
 
-        // Apply brightness value to preview image canvas
         canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
-
-        const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
-        croppedPreview.src = previewUrl;
+        croppedPreview.src = canvas.toDataURL('image/jpeg', 0.9);
         previewSection.style.display = 'flex';
     });
 
-    // Save/Download Photo Logic
+    // Save Action
     const downloadBtn = document.getElementById('downloadBtn');
     const nricInput = document.getElementById('nricInput');
 
@@ -503,10 +475,8 @@
             return;
         }
 
-        // Apply brightness value to saved image canvas
         canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
 
-        // Trigger Download
         canvas.toBlob((blob) => {
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
