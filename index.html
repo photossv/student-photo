@@ -67,7 +67,7 @@
             flex-direction: column;
             gap: 15px;
             position: relative;
-            z-index: 100; /* Ensure controls sit above any canvas overlays */
+            z-index: 100;
         }
         .file-input-group {
             display: flex;
@@ -144,10 +144,6 @@
             opacity: 1 !important;
         }
         
-        .cropper-canvas img {
-            transition: filter 0.1s ease;
-        }
-
         .preview-section {
             display: none;
             flex-direction: column;
@@ -313,9 +309,10 @@
     const brightnessSlider = document.getElementById('brightnessSlider');
     const nricInput = document.getElementById('nricInput');
 
+    // Helper to force-apply brightness to all rendered cropper images
     function applyBrightnessFilter() {
         const val = brightnessSlider.value;
-        const cropperImages = document.querySelectorAll('.cropper-canvas img');
+        const cropperImages = document.querySelectorAll('.cropper-container img, .cropper-canvas img');
         cropperImages.forEach(img => {
             img.style.filter = `brightness(${val}%)`;
         });
@@ -332,8 +329,13 @@
                 imageToCrop.style.display = 'block';
 
                 brightnessSlider.value = 100;
+                
+                // Force fully enabled state
+                brightnessSlider.removeAttribute('disabled');
                 brightnessSlider.disabled = false;
+                nricInput.removeAttribute('disabled');
                 nricInput.disabled = false;
+                
                 document.getElementById('previewSection').style.display = 'none';
 
                 if (cropper) {
@@ -349,6 +351,12 @@
                     toggleDragModeOnDblclick: false,
                     responsive: true,
                     checkCrossOrigin: false,
+                    ready() {
+                        applyBrightnessFilter();
+                    },
+                    crop() {
+                        applyBrightnessFilter();
+                    }
                 });
             };
 
@@ -371,7 +379,6 @@
         }
 
         loadingStatus.style.display = 'block';
-        brightnessSlider.disabled = true; // Temporarily disable while processing
 
         try {
             const detection = await faceapi.detectSingleFace(
@@ -405,8 +412,8 @@
             console.error('Face detection error:', err);
             alert('Error running face detection.');
         } finally {
-            // ALWAYS re-enable slider and re-apply current brightness filter
             loadingStatus.style.display = 'none';
+            brightnessSlider.removeAttribute('disabled');
             brightnessSlider.disabled = false;
             applyBrightnessFilter();
         }
@@ -422,7 +429,7 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Slider
+    // Live Brightness Listener
     brightnessSlider.addEventListener('input', applyBrightnessFilter);
 
     // Bake Brightness to Output Canvas
@@ -467,7 +474,7 @@
         croppedPreview.src = canvas.toDataURL('image/jpeg', 0.9);
         previewSection.style.display = 'flex';
 
-        // Explicitly unfreeze and focus NRIC input box
+        nricInput.removeAttribute('disabled');
         nricInput.disabled = false;
         nricInput.focus();
     });
