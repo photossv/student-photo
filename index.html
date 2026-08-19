@@ -313,6 +313,14 @@
     const brightnessSlider = document.getElementById('brightnessSlider');
     const nricInput = document.getElementById('nricInput');
 
+    function applyBrightnessFilter() {
+        const val = brightnessSlider.value;
+        const cropperImages = document.querySelectorAll('.cropper-canvas img');
+        cropperImages.forEach(img => {
+            img.style.filter = `brightness(${val}%)`;
+        });
+    }
+
     imageInput.addEventListener('change', (e) => {
         const files = e.target.files;
         if (files && files.length > 0) {
@@ -363,14 +371,13 @@
         }
 
         loadingStatus.style.display = 'block';
+        brightnessSlider.disabled = true; // Temporarily disable while processing
 
         try {
             const detection = await faceapi.detectSingleFace(
                 imageToCrop,
                 new faceapi.TinyFaceDetectorOptions()
             );
-
-            loadingStatus.style.display = 'none';
 
             if (!detection) {
                 alert('No face detected. You can manually adjust the photo position.');
@@ -394,13 +401,14 @@
 
             cropper.move(offsetX, offsetY);
 
-            // Re-enable brightness slider explicitly after async processing
-            brightnessSlider.disabled = false;
-
         } catch (err) {
-            loadingStatus.style.display = 'none';
             console.error('Face detection error:', err);
             alert('Error running face detection.');
+        } finally {
+            // ALWAYS re-enable slider and re-apply current brightness filter
+            loadingStatus.style.display = 'none';
+            brightnessSlider.disabled = false;
+            applyBrightnessFilter();
         }
     });
 
@@ -415,13 +423,7 @@
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
     // Live Brightness Slider
-    brightnessSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        const cropperImages = document.querySelectorAll('.cropper-canvas img');
-        cropperImages.forEach(img => {
-            img.style.filter = `brightness(${val}%)`;
-        });
-    });
+    brightnessSlider.addEventListener('input', applyBrightnessFilter);
 
     // Bake Brightness to Output Canvas
     function applyBrightnessToCanvas(canvas, brightnessValue) {
