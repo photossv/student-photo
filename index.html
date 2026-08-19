@@ -13,6 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f6f9;
@@ -54,8 +57,6 @@
             margin-bottom: 20px;
             border-radius: 4px;
             overflow: hidden;
-            position: relative;
-            z-index: 1;
         }
         .img-container img {
             max-width: 100%;
@@ -66,15 +67,11 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            position: relative;
-            z-index: 100;
         }
         .file-input-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
-            position: relative;
-            z-index: 101;
         }
         input[type="file"], input[type="text"] {
             padding: 10px;
@@ -82,11 +79,7 @@
             border-radius: 4px;
             font-size: 14px;
             width: 100%;
-            box-sizing: border-box;
-            position: relative;
-            z-index: 102;
-            pointer-events: auto !important;
-            background-color: #ffffff !important;
+            background-color: #ffffff;
         }
         
         .btn-group {
@@ -94,8 +87,6 @@
             gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
-            position: relative;
-            z-index: 101;
         }
         button {
             padding: 8px 12px;
@@ -106,9 +97,6 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 13px;
-            position: relative;
-            z-index: 102;
-            pointer-events: auto !important;
         }
         button:hover {
             background-color: #0056b3;
@@ -126,23 +114,68 @@
             background-color: #138496;
         }
         
-        /* Brightness Slider Styling */
+        /* FULLY CUSTOM SLIDER OVERRIDES */
         .slider-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 14px;
-            position: relative;
-            z-index: 101;
+            font-weight: bold;
+            color: #333;
+            padding: 5px 0;
         }
         
-        .slider-group input[type="range"] {
+        .slider-container {
             flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="range"]#brightnessSlider {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: 100% !important;
+            height: 8px !important;
+            background: #dcdfe6 !important;
+            border-radius: 4px !important;
+            outline: none !important;
+            margin: 0 !important;
             cursor: pointer !important;
-            position: relative;
-            z-index: 102;
-            accent-color: #007bff !important;
-            pointer-events: auto !important;
+        }
+
+        /* Webkit Slider Thumb */
+        input[type="range"]#brightnessSlider::-webkit-slider-thumb {
+            -webkit-appearance: none !important;
+            appearance: none !important;
+            width: 22px !important;
+            height: 22px !important;
+            border-radius: 50% !important;
+            background: #007bff !important;
+            cursor: pointer !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+            transition: background-color 0.2s !important;
+        }
+        
+        input[type="range"]#brightnessSlider::-webkit-slider-thumb:hover {
+            background: #0056b3 !important;
+        }
+
+        /* Firefox Slider Thumb */
+        input[type="range"]#brightnessSlider::-moz-range-thumb {
+            width: 22px !important;
+            height: 22px !important;
+            border-radius: 50% !important;
+            background: #007bff !important;
+            cursor: pointer !important;
+            border: none !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+        }
+
+        /* Target all Cropper internal views at the root stylesheet level */
+        .cropper-wrap-box img,
+        .cropper-canvas img,
+        .cropper-view-box img {
+            filter: brightness(var(--brightness-val, 100%)) !important;
         }
         
         .preview-section {
@@ -155,8 +188,6 @@
             border: 1px dashed #007bff;
             border-radius: 6px;
             text-align: center;
-            position: relative;
-            z-index: 101;
         }
         .preview-section h3 {
             margin: 0 0 10px 0;
@@ -182,8 +213,6 @@
             padding-top: 15px;
             border-top: 1px solid #eee;
             text-align: center;
-            position: relative;
-            z-index: 100;
         }
         .portal-link a {
             display: inline-block;
@@ -251,7 +280,10 @@
         <!-- Brightness Adjustment Slider -->
         <div class="slider-group">
             <label for="brightnessSlider">Brightness:</label>
-            <input type="range" id="brightnessSlider" min="50" max="150" value="100">
+            <div class="slider-container">
+                <input type="range" id="brightnessSlider" min="50" max="150" value="100">
+            </div>
+            <span id="brightnessValDisplay">100%</span>
         </div>
 
         <!-- Preview Button -->
@@ -308,16 +340,18 @@
     const imageInput = document.getElementById('imageInput');
     const imageToCrop = document.getElementById('imageToCrop');
     const brightnessSlider = document.getElementById('brightnessSlider');
+    const brightnessValDisplay = document.getElementById('brightnessValDisplay');
     const nricInput = document.getElementById('nricInput');
 
-    // Robust filter targeted at Cropper internal image/canvas renders
-    function applyBrightnessFilter() {
+    // Root variable update that permeates all Cropper re-renders
+    function applyBrightness() {
         const val = brightnessSlider.value;
-        const targets = document.querySelectorAll('.cropper-canvas img, .cropper-view-box img, .cropper-canvas canvas');
-        targets.forEach(el => {
-            el.style.filter = `brightness(${val}%)`;
-        });
+        brightnessValDisplay.textContent = `${val}%`;
+        document.documentElement.style.setProperty('--brightness-val', `${val}%`);
     }
+
+    brightnessSlider.addEventListener('input', applyBrightness);
+    brightnessSlider.addEventListener('change', applyBrightness);
 
     imageInput.addEventListener('change', (e) => {
         const files = e.target.files;
@@ -330,6 +364,7 @@
                 imageToCrop.style.display = 'block';
 
                 brightnessSlider.value = 100;
+                applyBrightness();
                 document.getElementById('previewSection').style.display = 'none';
 
                 if (cropper) {
@@ -346,13 +381,7 @@
                     responsive: true,
                     checkCrossOrigin: false,
                     ready() {
-                        applyBrightnessFilter();
-                    },
-                    crop() {
-                        applyBrightnessFilter();
-                    },
-                    zoom() {
-                        applyBrightnessFilter();
+                        applyBrightness();
                     }
                 });
             };
@@ -410,7 +439,7 @@
             alert('Error running face detection.');
         } finally {
             loadingStatus.style.display = 'none';
-            applyBrightnessFilter();
+            applyBrightness();
         }
     });
 
@@ -424,22 +453,30 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Slider Event Handling
-    brightnessSlider.addEventListener('input', applyBrightnessFilter);
-    brightnessSlider.addEventListener('change', applyBrightnessFilter);
+    // Render Canvas output with Brightness baked into the image file
+    function getProcessedCanvas() {
+        if (!cropper) return null;
 
-    // Bake Brightness to Output Canvas for Download/Preview
-    function applyBrightnessToCanvas(canvas, brightnessValue) {
-        if (brightnessValue == 100) return canvas;
-        
+        const croppedCanvas = cropper.getCroppedCanvas({
+            width: 240,
+            height: 320,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+        });
+
+        if (!croppedCanvas) return null;
+
+        const val = brightnessSlider.value;
+        if (val == 100) return croppedCanvas;
+
         const outputCanvas = document.createElement('canvas');
-        outputCanvas.width = canvas.width;
-        outputCanvas.height = canvas.height;
+        outputCanvas.width = 240;
+        outputCanvas.height = 320;
         const ctx = outputCanvas.getContext('2d');
-        
-        ctx.filter = `brightness(${brightnessValue}%)`;
-        ctx.drawImage(canvas, 0, 0);
-        
+
+        ctx.filter = `brightness(${val}%)`;
+        ctx.drawImage(croppedCanvas, 0, 0);
+
         return outputCanvas;
     }
 
@@ -454,22 +491,14 @@
             return;
         }
 
-        let canvas = cropper.getCroppedCanvas({
-            width: 240,
-            height: 320,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high',
-        });
-
+        const canvas = getProcessedCanvas();
         if (!canvas) {
             alert('Could not generate preview.');
             return;
         }
 
-        canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
         croppedPreview.src = canvas.toDataURL('image/jpeg', 0.9);
         previewSection.style.display = 'flex';
-
         nricInput.focus();
     });
 
@@ -491,19 +520,11 @@
             return;
         }
 
-        let canvas = cropper.getCroppedCanvas({
-            width: 240,
-            height: 320,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: 'high',
-        });
-
+        const canvas = getProcessedCanvas();
         if (!canvas) {
             alert('Could not crop photo.');
             return;
         }
-
-        canvas = applyBrightnessToCanvas(canvas, brightnessSlider.value);
 
         canvas.toBlob((blob) => {
             const link = document.createElement('a');
