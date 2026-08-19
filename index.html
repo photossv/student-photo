@@ -126,7 +126,7 @@
             background-color: #138496;
         }
         
-        /* Standard Brightness Slider Styling */
+        /* Brightness Slider explicitly styled */
         .slider-group {
             display: flex;
             align-items: center;
@@ -138,12 +138,13 @@
         
         .slider-group input[type="range"] {
             flex: 1;
-            cursor: pointer;
+            cursor: pointer !important;
             position: relative;
             z-index: 102;
-            accent-color: #007bff;
+            accent-color: #007bff !important;
             pointer-events: auto !important;
             opacity: 1 !important;
+            -webkit-appearance: slider-horizontal !important;
         }
         
         .preview-section {
@@ -311,14 +312,13 @@
     const brightnessSlider = document.getElementById('brightnessSlider');
     const nricInput = document.getElementById('nricInput');
 
-    // Safe helper function to adjust brightness on cropper images
+    // Apply filter directly to the parent cropper-container
     function applyBrightnessFilter() {
-        if (!cropper) return;
         const val = brightnessSlider.value;
-        const cropperImages = document.querySelectorAll('.cropper-container img, .cropper-canvas img');
-        cropperImages.forEach(img => {
-            img.style.filter = `brightness(${val}%)`;
-        });
+        const container = document.querySelector('.cropper-container');
+        if (container) {
+            container.style.filter = `brightness(${val}%)`;
+        }
     }
 
     imageInput.addEventListener('change', (e) => {
@@ -348,9 +348,6 @@
                     responsive: true,
                     checkCrossOrigin: false,
                     ready() {
-                        applyBrightnessFilter();
-                    },
-                    crop() {
                         applyBrightnessFilter();
                     }
                 });
@@ -423,8 +420,9 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Slider Event Listeners
+    // Live Brightness Event Listeners
     brightnessSlider.addEventListener('input', applyBrightnessFilter);
+    brightnessSlider.addEventListener('change', applyBrightnessFilter);
 
     // Bake Brightness to Output Canvas
     function applyBrightnessToCanvas(canvas, brightnessValue) {
