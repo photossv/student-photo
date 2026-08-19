@@ -133,19 +133,21 @@
             font-size: 14px;
             position: relative;
             z-index: 101;
+            transition: opacity 0.2s ease;
         }
+        
+        /* Custom visual disable handling */
+        .slider-group.disabled-slider {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        
         .slider-group input[type="range"] {
             flex: 1;
             cursor: pointer;
             position: relative;
             z-index: 102;
             accent-color: #007bff;
-        }
-        
-        /* Visual cue for disabled slider */
-        .slider-group input[type="range"]:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
         }
         
         .preview-section {
@@ -251,10 +253,10 @@
             <button type="button" id="zoomOutBtn" class="btn-secondary" style="flex:1;">➖ Zoom Out</button>
         </div>
 
-        <!-- Brightness Adjustment Slider (Disabled by default until image loads) -->
-        <div class="slider-group">
+        <!-- Brightness Adjustment Slider (Controlled visually via CSS class) -->
+        <div id="sliderWrapper" class="slider-group disabled-slider">
             <label for="brightnessSlider">Brightness:</label>
-            <input type="range" id="brightnessSlider" min="50" max="150" value="100" disabled>
+            <input type="range" id="brightnessSlider" min="50" max="150" value="100">
         </div>
 
         <!-- Preview Button -->
@@ -311,11 +313,12 @@
     const imageInput = document.getElementById('imageInput');
     const imageToCrop = document.getElementById('imageToCrop');
     const brightnessSlider = document.getElementById('brightnessSlider');
+    const sliderWrapper = document.getElementById('sliderWrapper');
     const nricInput = document.getElementById('nricInput');
 
     // Helper to force-apply brightness safely
     function applyBrightnessFilter() {
-        if (!cropper) return; // SAFEGUARD: Do nothing if no photo loaded
+        if (!cropper) return; // Safeguard if no image is loaded
         
         const val = brightnessSlider.value;
         const cropperImages = document.querySelectorAll('.cropper-container img, .cropper-canvas img');
@@ -336,9 +339,8 @@
 
                 brightnessSlider.value = 100;
                 
-                // UNLOCK SLIDER NOW THAT PHOTO IS LOADED
-                brightnessSlider.disabled = false;
-                nricInput.disabled = false;
+                // UNLOCK SLIDER VISUALLY BY REMOVING CLASS
+                sliderWrapper.classList.remove('disabled-slider');
                 
                 document.getElementById('previewSection').style.display = 'none';
 
@@ -417,7 +419,7 @@
             alert('Error running face detection.');
         } finally {
             loadingStatus.style.display = 'none';
-            brightnessSlider.disabled = false;
+            sliderWrapper.classList.remove('disabled-slider');
             applyBrightnessFilter();
         }
     });
@@ -432,8 +434,9 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Listener
+    // Live Brightness Listener (Runs on both input and change)
     brightnessSlider.addEventListener('input', applyBrightnessFilter);
+    brightnessSlider.addEventListener('change', applyBrightnessFilter);
 
     // Bake Brightness to Output Canvas
     function applyBrightnessToCanvas(canvas, brightnessValue) {
@@ -477,7 +480,6 @@
         croppedPreview.src = canvas.toDataURL('image/jpeg', 0.9);
         previewSection.style.display = 'flex';
 
-        nricInput.disabled = false;
         nricInput.focus();
     });
 
