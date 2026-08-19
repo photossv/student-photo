@@ -126,7 +126,7 @@
             background-color: #138496;
         }
         
-        /* Brightness Slider explicitly styled */
+        /* Brightness Slider Styling */
         .slider-group {
             display: flex;
             align-items: center;
@@ -143,8 +143,6 @@
             z-index: 102;
             accent-color: #007bff !important;
             pointer-events: auto !important;
-            opacity: 1 !important;
-            -webkit-appearance: slider-horizontal !important;
         }
         
         .preview-section {
@@ -312,13 +310,13 @@
     const brightnessSlider = document.getElementById('brightnessSlider');
     const nricInput = document.getElementById('nricInput');
 
-    // Apply filter directly to the parent cropper-container
+    // Robust filter targeted at Cropper internal image/canvas renders
     function applyBrightnessFilter() {
         const val = brightnessSlider.value;
-        const container = document.querySelector('.cropper-container');
-        if (container) {
-            container.style.filter = `brightness(${val}%)`;
-        }
+        const targets = document.querySelectorAll('.cropper-canvas img, .cropper-view-box img, .cropper-canvas canvas');
+        targets.forEach(el => {
+            el.style.filter = `brightness(${val}%)`;
+        });
     }
 
     imageInput.addEventListener('change', (e) => {
@@ -348,6 +346,12 @@
                     responsive: true,
                     checkCrossOrigin: false,
                     ready() {
+                        applyBrightnessFilter();
+                    },
+                    crop() {
+                        applyBrightnessFilter();
+                    },
+                    zoom() {
                         applyBrightnessFilter();
                     }
                 });
@@ -420,11 +424,11 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Event Listeners
+    // Live Brightness Slider Event Handling
     brightnessSlider.addEventListener('input', applyBrightnessFilter);
     brightnessSlider.addEventListener('change', applyBrightnessFilter);
 
-    // Bake Brightness to Output Canvas
+    // Bake Brightness to Output Canvas for Download/Preview
     function applyBrightnessToCanvas(canvas, brightnessValue) {
         if (brightnessValue == 100) return canvas;
         
