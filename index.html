@@ -126,6 +126,7 @@
             background-color: #138496;
         }
         
+        /* Standard Brightness Slider Styling */
         .slider-group {
             display: flex;
             align-items: center;
@@ -133,13 +134,6 @@
             font-size: 14px;
             position: relative;
             z-index: 101;
-            transition: opacity 0.2s ease;
-        }
-        
-        /* Custom visual disable handling */
-        .slider-group.disabled-slider {
-            opacity: 0.4;
-            pointer-events: none;
         }
         
         .slider-group input[type="range"] {
@@ -148,6 +142,8 @@
             position: relative;
             z-index: 102;
             accent-color: #007bff;
+            pointer-events: auto !important;
+            opacity: 1 !important;
         }
         
         .preview-section {
@@ -253,8 +249,8 @@
             <button type="button" id="zoomOutBtn" class="btn-secondary" style="flex:1;">➖ Zoom Out</button>
         </div>
 
-        <!-- Brightness Adjustment Slider (Controlled visually via CSS class) -->
-        <div id="sliderWrapper" class="slider-group disabled-slider">
+        <!-- Brightness Adjustment Slider -->
+        <div class="slider-group">
             <label for="brightnessSlider">Brightness:</label>
             <input type="range" id="brightnessSlider" min="50" max="150" value="100">
         </div>
@@ -313,13 +309,11 @@
     const imageInput = document.getElementById('imageInput');
     const imageToCrop = document.getElementById('imageToCrop');
     const brightnessSlider = document.getElementById('brightnessSlider');
-    const sliderWrapper = document.getElementById('sliderWrapper');
     const nricInput = document.getElementById('nricInput');
 
-    // Helper to force-apply brightness safely
+    // Safe helper function to adjust brightness on cropper images
     function applyBrightnessFilter() {
-        if (!cropper) return; // Safeguard if no image is loaded
-        
+        if (!cropper) return;
         const val = brightnessSlider.value;
         const cropperImages = document.querySelectorAll('.cropper-container img, .cropper-canvas img');
         cropperImages.forEach(img => {
@@ -338,10 +332,6 @@
                 imageToCrop.style.display = 'block';
 
                 brightnessSlider.value = 100;
-                
-                // UNLOCK SLIDER VISUALLY BY REMOVING CLASS
-                sliderWrapper.classList.remove('disabled-slider');
-                
                 document.getElementById('previewSection').style.display = 'none';
 
                 if (cropper) {
@@ -419,7 +409,6 @@
             alert('Error running face detection.');
         } finally {
             loadingStatus.style.display = 'none';
-            sliderWrapper.classList.remove('disabled-slider');
             applyBrightnessFilter();
         }
     });
@@ -434,9 +423,8 @@
     document.getElementById('zoomInBtn').addEventListener('click', () => { if (cropper) cropper.zoom(0.1); });
     document.getElementById('zoomOutBtn').addEventListener('click', () => { if (cropper) cropper.zoom(-0.1); });
 
-    // Live Brightness Listener (Runs on both input and change)
+    // Slider Event Listeners
     brightnessSlider.addEventListener('input', applyBrightnessFilter);
-    brightnessSlider.addEventListener('change', applyBrightnessFilter);
 
     // Bake Brightness to Output Canvas
     function applyBrightnessToCanvas(canvas, brightnessValue) {
