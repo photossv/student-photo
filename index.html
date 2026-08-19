@@ -140,8 +140,12 @@
             position: relative;
             z-index: 102;
             accent-color: #007bff;
-            pointer-events: auto !important;
-            opacity: 1 !important;
+        }
+        
+        /* Visual cue for disabled slider */
+        .slider-group input[type="range"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
         }
         
         .preview-section {
@@ -247,10 +251,10 @@
             <button type="button" id="zoomOutBtn" class="btn-secondary" style="flex:1;">➖ Zoom Out</button>
         </div>
 
-        <!-- Brightness Adjustment Slider -->
+        <!-- Brightness Adjustment Slider (Disabled by default until image loads) -->
         <div class="slider-group">
             <label for="brightnessSlider">Brightness:</label>
-            <input type="range" id="brightnessSlider" min="50" max="150" value="100">
+            <input type="range" id="brightnessSlider" min="50" max="150" value="100" disabled>
         </div>
 
         <!-- Preview Button -->
@@ -309,8 +313,10 @@
     const brightnessSlider = document.getElementById('brightnessSlider');
     const nricInput = document.getElementById('nricInput');
 
-    // Helper to force-apply brightness to all rendered cropper images
+    // Helper to force-apply brightness safely
     function applyBrightnessFilter() {
+        if (!cropper) return; // SAFEGUARD: Do nothing if no photo loaded
+        
         const val = brightnessSlider.value;
         const cropperImages = document.querySelectorAll('.cropper-container img, .cropper-canvas img');
         cropperImages.forEach(img => {
@@ -330,10 +336,8 @@
 
                 brightnessSlider.value = 100;
                 
-                // Force fully enabled state
-                brightnessSlider.removeAttribute('disabled');
+                // UNLOCK SLIDER NOW THAT PHOTO IS LOADED
                 brightnessSlider.disabled = false;
-                nricInput.removeAttribute('disabled');
                 nricInput.disabled = false;
                 
                 document.getElementById('previewSection').style.display = 'none';
@@ -413,7 +417,6 @@
             alert('Error running face detection.');
         } finally {
             loadingStatus.style.display = 'none';
-            brightnessSlider.removeAttribute('disabled');
             brightnessSlider.disabled = false;
             applyBrightnessFilter();
         }
@@ -474,7 +477,6 @@
         croppedPreview.src = canvas.toDataURL('image/jpeg', 0.9);
         previewSection.style.display = 'flex';
 
-        nricInput.removeAttribute('disabled');
         nricInput.disabled = false;
         nricInput.focus();
     });
