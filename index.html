@@ -512,7 +512,8 @@
         }
 
         const nricValue = nricInput.value.trim().toUpperCase();
-        const nricRegex = /^[A-Z0-9]{9}$/;
+        const nricRegex = /^[ST]\d{7}[A-Z]$/;
+        
 
         if (!nricRegex.test(nricValue)) {
             alert('Please enter a valid 9-character NRIC number (e.g., S1234567A) before saving.');
